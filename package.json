@@ -1,0 +1,13 @@
+{
+  "name": "hangul-syllable",
+  "version": "0.0.1",
+  "description": "Composing (Korean) Hangul syllables from an array of individual jamos ",
+  "main": "index.js",
+  "repository": "git@github.com:mesili/hangul-syllable.git",
+  "author": "Sebastien Mesili <sebastien@mesili.fr>",
+  "license": "MIT",
+  "private": false,
+  "scripts": {
+      "test": "node hangul-syllable.spec.js"
+  }
+}

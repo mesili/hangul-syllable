@@ -1,19 +1,13 @@
-
 /* 
- * http://www.unicode.org/versions/Unicode9.0.0/ch03.pdf
+ * References :
  *
+ * http://www.unicode.org/versions/Unicode9.0.0/ch03.pdf
  * https://en.wikipedia.org/wiki/Korean_language_and_computers
  *
- * TODO : compose / decompose final consonants if the next character
- * is in the lead table or not
- * Example : 
- * 닭 = ㄷ + ㅏ + ㄹ + ㄱ  
- * 닭발 = ㄷ + ㅏ + ㄹ + ㄱ + ㅂ + ㅏ + ㄹ  (ㅂ is a consonant)
- * 달걸 = ㄷ + ㅏ + ㄹ + ㄱ + ㅓ + ㄹ (ㅏ is not a lead, we must decompose 닭 as 달 + 거)
  */
 
 
-
+// FIXME : Simplify the values sub object as an array using indexes
 const values = {
     vowel:{
         1 :  ['ᅡ', 'ㅏ'],
@@ -91,12 +85,13 @@ const values = {
 
 }
 
+
+// FIXME : Add missing sequences
 const composeTail = (a, b) => {
     const sequences = {
         'ㄲ': [1,1],
         'ㄺ': [8,1],
     }   
-    //console.log({a,b})
 
     return Object.entries(sequences).filter(e => (
         e[1][0] === hangulNumber(a, 'tail')
@@ -104,10 +99,10 @@ const composeTail = (a, b) => {
     )))[0][0]
 }
 
-/*
- * Naive algorithm with dual consonant as single character input
- */
 
+/*
+ * Get the unicode multiplier for given jamo
+ */
 const hangulNumber = (jamo, position) => {
     const number = Object.entries(values[position]).filter(
         e => e[1].indexOf(jamo) > -1
@@ -116,8 +111,8 @@ const hangulNumber = (jamo, position) => {
 }
 
 /* 
- * han - Returns coharacter
- * from it's lead, vowel and tail characters
+ * Get the combined hangul syllable from 
+ * it's jamo components
  */
 const han = (lead, vowel, tail) => {
     const cLead = hangulNumber(lead, 'lead')
@@ -127,28 +122,30 @@ const han = (lead, vowel, tail) => {
     let composedCode = cTail + ((cVowel-1) * 28) + ((cLead-1) * 588 )
     composedCode += 44032
 
+    // Do not allow an overflow outside the 
+    // Unicode range of hangul syllables
     if (composedCode > 55171 || composedCode < 44032) {
         console.error([lead, vowel, tail])
-        throw new Error('Invalid hangul code')
+        throw new Error('No hangul syllable for this unicode value')
     }
 
     const composedCharacter =  String.fromCharCode(composedCode)
     return composedCharacter
 }
 
+/*
+ * Input logic
+ * When building a Hangul syllable, 
+ * the final consonant will be defined
+ * following the next two jamos : 
+ * - first next jamo = vowel or none > not composed
+ * - first next jamo = consonant >
+ *     - second next jamo = consonant : composed as double consonant
+ *     - second next jamo = vowel : not composed 
+ */
 const build = jamos => {
     const syllables = []
-    //
-    // Logic
-    // loop through the jamos
-    // define lead, vowel, tail (if any)
-    // if there is a tail
-    //  - look up the next jamo
-    //  달   ㄷㅏㄹ        if there is none : do nothing
-    //  닭   ㄷㅏㄹㄱ      if it is a consonant followed by a consonant or by nothing: compose
-    //  달걸 ㄷㅏㄹㄱㅓㄹ  if it is a consonant followed by a vowel  : do not compose
     let cursor = 0
-
 
     while(cursor < jamos.length) {
         //console.log({cursor})
@@ -156,6 +153,7 @@ const build = jamos => {
         let vowel = jamos[cursor+1]
         let tail = jamos[cursor+2]
 
+        // FIXME : clean up the conditions 
         let hasMoreJamos = jamos.length - cursor > 3
         let hasNoTail = hangulNumber(jamos[cursor+3], 'vowel') > 0
         let hasDoubleTail = hangulNumber(jamos[cursor+3], 'tail') > 0
@@ -163,6 +161,7 @@ const build = jamos => {
 
         if (hasNoTail && !hasDoubleTail) tail = ''
 
+        // FIXME : work from cursor +=2 and add up conditionally
         if ( hasMoreJamos && !hasNoTail && hasDoubleTail && followedByNothingOrVowel) {
             cursor+=3
         } else if (hasMoreJamos && !hasNoTail && hasDoubleTail) {
@@ -175,28 +174,12 @@ const build = jamos => {
         }
 
         syllables.push(han(lead, vowel, tail))
-        
     }
 
     return syllables.join('')
 }
 
-const samples = [
-    [ ['ㅎ', 'ㅏ', 'ㄴ'], '한' ],
-    [ ['ㄱ', 'ㅏ', 'ㄴ'], '간' ],
-    [ ['ㄴ', 'ㅏ', ''], '나' ],
-    [ ['ㄷ', 'ㅏ', 'ᆰ'], '닭' ],
-    [ ['ㄷ', 'ㅏ', 'ㄹ', 'ㄱ'], '닭' ],
-    [ ['ㄷ', 'ㅏ', 'ㄹ', 'ㄱ', 'ㅓ', 'ㄹ'], '달걸' ],
-    [ ['ㅇ','ㅏ','ㄴ','ㄴ','ㅕ','ㅇ','ㅎ','ㅏ','ㅅ','ㅔ','ㅇ','ㅛ'], '안녕하세요' ],
-    [ ['ㄷ', 'ㅏ', 'ㄹ', 'ㄱ', 'ㅂ', 'ㅏ', 'ㄹ'], '닭발' ],
-]
+module.exports = {
+    buildSyllables: build
+}
 
-samples.forEach( ([sample, expected]) => {
-
-    console.table({sample, expected})
-
-    if ( build(sample) !== expected ) {
-        throw new Error('Not the expected character')
-    }
-})
