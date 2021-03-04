@@ -92,11 +92,8 @@ const composeTail = (a, b) => {
         'ㄲ': [1,1],
         'ㄺ': [8,1],
     }   
-
-    return Object.entries(sequences).filter(e => (
-        e[1][0] === hangulNumber(a, 'tail')
-        && e[1][1] === hangulNumber(b, 'tail' 
-    )))[0][0]
+    const seqFilter = e => e[1][0] === hangulNumber(a, 'tail') && e[1][1] === hangulNumber(b, 'tail')
+    return Object.entries(sequences).filter(seqFilter)[0][0]
 }
 
 
@@ -119,8 +116,7 @@ const han = (lead, vowel, tail) => {
     const cVowel = hangulNumber(vowel, 'vowel')
     const cTail = hangulNumber(tail, 'tail')
 
-    let composedCode = cTail + ((cVowel-1) * 28) + ((cLead-1) * 588 )
-    composedCode += 44032
+    let composedCode = cTail + (cVowel-1) * 28 + (cLead-1) * 588 + 44032
 
     // Do not allow an overflow outside the 
     // Unicode range of hangul syllables
@@ -129,8 +125,7 @@ const han = (lead, vowel, tail) => {
         throw new Error('No hangul syllable for this unicode value')
     }
 
-    const composedCharacter =  String.fromCharCode(composedCode)
-    return composedCharacter
+    return String.fromCharCode(composedCode)
 }
 
 /*
@@ -162,7 +157,7 @@ const build = jamos => {
         if (hasNoTail && !hasDoubleTail) tail = ''
 
         // FIXME : work from cursor +=2 and add up conditionally
-        if ( hasMoreJamos && !hasNoTail && hasDoubleTail && followedByNothingOrVowel) {
+        if (hasMoreJamos && !hasNoTail && hasDoubleTail && followedByNothingOrVowel) {
             cursor+=3
         } else if (hasMoreJamos && !hasNoTail && hasDoubleTail) {
             tail = composeTail(tail, jamos[cursor+3])

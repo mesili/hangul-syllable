@@ -8,6 +8,9 @@
   "license": "MIT",
   "private": false,
   "scripts": {
-      "test": "node hangul-syllable.spec.js"
+    "test": "node hangul-syllable.spec.js"
+  },
+  "devDependencies": {
+    "eslint": "^7.21.0"
   }
 }
